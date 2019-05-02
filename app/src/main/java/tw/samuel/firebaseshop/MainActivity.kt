@@ -1,18 +1,22 @@
 package tw.samuel.firebaseshop
 
-import android.app.Activity
-import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Base64
 import android.util.Log
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity;
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import com.firebase.ui.auth.AuthMethodPickerLayout
+import com.firebase.ui.auth.AuthUI
+import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
-
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import java.security.MessageDigest
+import java.security.NoSuchAlgorithmException
+import java.util.*
 
 class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 	private val TAG = MainActivity::class.java.simpleName
@@ -35,6 +39,7 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 						}
 					}
 		}
+		_hashKey()
 	}
 
 	override fun onStart() {
@@ -72,7 +77,23 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		return when (item.itemId) {
 			R.id.action_settings -> true
 			R.id.action_signin -> {
-				startActivityForResult(Intent(this, SignInActivity::class.java), RC_SIGNIN)
+//				startActivityForResult(Intent(this, SignInActivity::class.java), RC_SIGNIN)
+				startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder()
+					.setAvailableProviders(Arrays.asList(
+						AuthUI.IdpConfig.EmailBuilder().build(),
+						AuthUI.IdpConfig.GoogleBuilder().build(),
+                        AuthUI.IdpConfig.FacebookBuilder().build(),
+						AuthUI.IdpConfig.PhoneBuilder().setWhitelistedCountries(listOf("tw", "hk", "cn", "au")).setDefaultCountryIso("tw").build()
+					))
+					.setIsSmartLockEnabled(false)
+					.setLogo(R.mipmap.ic_launcher)
+					.setTheme(R.style.SignUp)
+					.setAuthMethodPickerLayout(AuthMethodPickerLayout.Builder(R.layout.firebase_signin)
+						.setEmailButtonId(R.id.sign_in_with_email)
+						.setGoogleButtonId(R.id.sign_in_with_google)
+						.setFacebookButtonId(R.id.sign_in_with_facebook)
+						.setPhoneButtonId(R.id.sign_in_with_phone).build())
+					.build(), RC_SIGNIN)
 				true
 			}
 			R.id.action_signout -> {
@@ -80,6 +101,18 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 				true
 			}
 			else -> super.onOptionsItemSelected(item)
+		}
+	}
+
+	fun _hashKey() {
+		try {
+			val info = packageManager.getPackageInfo("tw.samuel.firebaseshop", PackageManager.GET_SIGNATURES)
+			for (signature in info.signatures) {
+				val md = MessageDigest.getInstance("SHA")
+				md.update(signature.toByteArray())
+				Log.e("KeyHash:", Base64.encodeToString(md.digest(), Base64.DEFAULT))
+			}
+		} catch (e: NoSuchAlgorithmException) {
 		}
 	}
 }
