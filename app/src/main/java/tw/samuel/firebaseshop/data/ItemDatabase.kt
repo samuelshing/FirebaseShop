@@ -16,7 +16,7 @@ abstract class ItemDatabase : RoomDatabase() {
 			Room.databaseBuilder(context, ItemDatabase::class.java, "mydb").allowMainThreadQueries().build()
 		}
 
-		fun getDatabase(context: Context): ItemDatabase? {
+		fun getDatabase(context: Context): ItemDatabase {
 			Companion.context = context
 			return database
 		}

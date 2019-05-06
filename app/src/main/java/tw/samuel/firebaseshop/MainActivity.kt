@@ -84,19 +84,9 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 			Log.d(TAG, "observe: ${it.size}")
 			adapter.items = it
 			adapter.notifyDataSetChanged()
-//			saveToDB(list)
 		})
 
 		_hashKey()
-	}
-
-	private fun saveToDB(list: MutableList<Item>) {
-		list.forEach { item ->
-			ItemDatabase.getDatabase(this)?.getItemDao()?.addItem(item)
-		}
-		ItemDatabase.getDatabase(this)?.getItemDao()?.getItems()?.forEach { item ->
-			Log.d(TAG, "Room: ${item.id} ${item.title}")
-		}
 	}
 
 	inner class ItemAdapter(var items: List<Item>) : RecyclerView.Adapter<ItemHolder>() {

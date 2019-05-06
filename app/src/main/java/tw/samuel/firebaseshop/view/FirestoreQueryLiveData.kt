@@ -5,11 +5,8 @@ import com.google.firebase.firestore.*
 import tw.samuel.firebaseshop.model.Item
 
 class FirestoreQueryLiveData : LiveData<List<Item>>(), EventListener<QuerySnapshot> {
-	private lateinit var registration: ListenerRegistration
-	var query = FirebaseFirestore.getInstance()
-		.collection("items")
-		.orderBy("viewCount", Query.Direction.DESCENDING)
-		.limit(10)
+	lateinit var registration: ListenerRegistration
+	var query = FirebaseFirestore.getInstance().collection("items").orderBy("viewCount", Query.Direction.DESCENDING).limit(10)
 	var isRegistered = false
 
 	override fun onActive() {
