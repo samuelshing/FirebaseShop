@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 				task.result?.let {
 					categories.add(Category("", "不分類"))
 					for (doc in it) {
-						categories.add(Category(doc.id, doc.data.get("name").toString()))
+						categories.add(Category(doc.id, doc.data["name"].toString()))
 					}
 					spinner.adapter = ArrayAdapter<Category>(this@MainActivity, android.R.layout.simple_spinner_item, categories).apply {
 						setDropDownViewResource(android.R.layout.simple_dropdown_item_1line)
@@ -60,11 +60,11 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 					spinner.setSelection(0, false)
 					spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
 						override fun onNothingSelected(parent: AdapterView<*>?) {
-							TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+							Log.d(TAG, "onNothingSelected: ")
 						}
 
 						override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-							TODO()
+							itemViewModel.setCategory(categories[position].id)
 						}
 					}
 				}
@@ -77,8 +77,14 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		recycler.adapter = adapter
 		itemViewModel = ViewModelProviders.of(this).get(ItemViewModel::class.java)
 		itemViewModel.getItems().observe(this, androidx.lifecycle.Observer {
-			Log.d(TAG, "observe: ${it.size}")
-			adapter.items = it
+			Log.d(TAG, "observe: ${it.size()}")
+			val list = mutableListOf<Item>()
+			for (doc in it.documents) {
+				val item = doc.toObject(Item::class.java)?:Item()
+				item.id = doc.id
+				list.add(item)
+			}
+			adapter.items = list
 			adapter.notifyDataSetChanged()
 		})
 
