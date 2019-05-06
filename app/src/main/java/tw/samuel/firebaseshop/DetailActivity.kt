@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_detail.*
+import tw.samuel.firebaseshop.model.Item
 
 class DetailActivity : AppCompatActivity() {
     lateinit var item: Item

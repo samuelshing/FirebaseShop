@@ -19,6 +19,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import tw.samuel.firebaseshop.data.ItemDatabase
+import tw.samuel.firebaseshop.model.Category
+import tw.samuel.firebaseshop.model.Item
+import tw.samuel.firebaseshop.view.ItemHolder
+import tw.samuel.firebaseshop.view.ItemViewModel
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
@@ -29,7 +34,6 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 	var categories = mutableListOf<Category>()
 	lateinit var adapter: ItemAdapter
 	lateinit var itemViewModel: ItemViewModel
-
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -77,16 +81,10 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		recycler.adapter = adapter
 		itemViewModel = ViewModelProviders.of(this).get(ItemViewModel::class.java)
 		itemViewModel.getItems().observe(this, androidx.lifecycle.Observer {
-			Log.d(TAG, "observe: ${it.size()}")
-			val list = mutableListOf<Item>()
-			for (doc in it.documents) {
-				val item = doc.toObject(Item::class.java) ?: Item()
-				item.id = doc.id
-				list.add(item)
-			}
-			adapter.items = list
+			Log.d(TAG, "observe: ${it.size}")
+			adapter.items = it
 			adapter.notifyDataSetChanged()
-			saveToDB(list)
+//			saveToDB(list)
 		})
 
 		_hashKey()
@@ -140,7 +138,6 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		Log.d(TAG, "onAuthStateChanged: ${user?.uid}")
 		if (user != null) {
 			user_info.text = "Email: ${user.email} / ${user.isEmailVerified}"
-//			verify_email.visibility = if (user.isEmailVerified) View.GONE else View.VISIBLE
 		} else {
 			user_info.text = "Not login"
 			verify_email.visibility = View.GONE
@@ -160,7 +157,6 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		return when (item.itemId) {
 			R.id.action_settings -> true
 			R.id.action_signin -> {
-//				startActivityForResult(Intent(this, SignInActivity::class.java), RC_SIGNIN)
 				startActivityForResult(
 					AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(
 						Arrays.asList(

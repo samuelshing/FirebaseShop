@@ -1,10 +1,12 @@
-package tw.samuel.firebaseshop
+package tw.samuel.firebaseshop.view
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.request.RequestOptions
 import kotlinx.android.synthetic.main.item_row.view.*
+import tw.samuel.firebaseshop.R
+import tw.samuel.firebaseshop.model.Item
 
 class ItemHolder(view: View) : RecyclerView.ViewHolder(view) {
     var titleText = view.item_title

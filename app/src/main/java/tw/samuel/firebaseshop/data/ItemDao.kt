@@ -1,9 +1,10 @@
-package tw.samuel.firebaseshop
+package tw.samuel.firebaseshop.data
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import tw.samuel.firebaseshop.model.Item
 
 @Dao
 interface ItemDao {
@@ -11,5 +12,5 @@ interface ItemDao {
 	fun getItems(): List<Item>
 
 	@Insert(onConflict = OnConflictStrategy.REPLACE)
-	fun addItem(item:Item)
+	fun addItem(item: Item)
 }

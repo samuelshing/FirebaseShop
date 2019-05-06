@@ -1,7 +1,8 @@
-package tw.samuel.firebaseshop
+package tw.samuel.firebaseshop.view
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import tw.samuel.firebaseshop.model.Item
 
 class ItemViewModel : ViewModel() {
 	private var items = MutableLiveData<List<Item>>()

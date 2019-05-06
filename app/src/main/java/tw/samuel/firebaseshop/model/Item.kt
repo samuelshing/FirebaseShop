@@ -1,4 +1,4 @@
-package tw.samuel.firebaseshop
+package tw.samuel.firebaseshop.model
 
 import android.os.Parcelable
 import androidx.room.Entity
