@@ -1,17 +1,22 @@
 package tw.samuel.firebaseshop
 
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Base64
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
-import android.view.View
+import android.view.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.firebase.ui.auth.AuthMethodPickerLayout
 import com.firebase.ui.auth.AuthUI
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
 import java.security.MessageDigest
@@ -21,6 +26,10 @@ import java.util.*
 class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 	private val TAG = MainActivity::class.java.simpleName
 	private val RC_SIGNIN: Int = 100
+	var categories = mutableListOf<Category>()
+	lateinit var adapter: ItemAdapter
+	lateinit var itemViewModel: ItemViewModel
+
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -28,18 +37,76 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		setSupportActionBar(toolbar)
 
 		fab.setOnClickListener { view ->
-			Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-					.setAction("Action", null).show()
+			Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG).setAction("Action", null).show()
 		}
 		verify_email.setOnClickListener {
-			FirebaseAuth.getInstance().currentUser?.sendEmailVerification()
-					?.addOnCompleteListener { task ->
-						if (task.isSuccessful) {
-							Snackbar.make(it, "Verify email sent", Snackbar.LENGTH_LONG).show()
+			FirebaseAuth.getInstance().currentUser?.sendEmailVerification()?.addOnCompleteListener { task ->
+				if (task.isSuccessful) {
+					Snackbar.make(it, "Verify email sent", Snackbar.LENGTH_LONG).show()
+				}
+			}
+		}
+
+		FirebaseFirestore.getInstance().collection("categories").get().addOnCompleteListener { task ->
+			if (task.isSuccessful) {
+				task.result?.let {
+					categories.add(Category("", "不分類"))
+					for (doc in it) {
+						categories.add(Category(doc.id, doc.data.get("name").toString()))
+					}
+					spinner.adapter = ArrayAdapter<Category>(this@MainActivity, android.R.layout.simple_spinner_item, categories).apply {
+						setDropDownViewResource(android.R.layout.simple_dropdown_item_1line)
+					}
+					spinner.setSelection(0, false)
+					spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+						override fun onNothingSelected(parent: AdapterView<*>?) {
+							TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+						}
+
+						override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+							TODO()
 						}
 					}
+				}
+			}
 		}
+
+		recycler.setHasFixedSize(true)
+		recycler.layoutManager = LinearLayoutManager(this)
+		adapter = ItemAdapter(mutableListOf())
+		recycler.adapter = adapter
+		itemViewModel = ViewModelProviders.of(this).get(ItemViewModel::class.java)
+		itemViewModel.getItems().observe(this, androidx.lifecycle.Observer {
+			Log.d(TAG, "observe: ${it.size}")
+			adapter.items = it
+			adapter.notifyDataSetChanged()
+		})
+
 		_hashKey()
+	}
+
+	inner class ItemAdapter(var items: List<Item>) : RecyclerView.Adapter<ItemHolder>() {
+		override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ItemHolder {
+			return ItemHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_row, parent, false))
+		}
+
+		override fun getItemCount(): Int {
+			return items.size
+		}
+
+		override fun onBindViewHolder(holder: ItemHolder, position: Int) {
+			holder.bindTo(items[position])
+			holder.itemView.setOnClickListener {
+				itemClicked(items[position], position)
+			}
+		}
+	}
+
+	private fun itemClicked(item: Item, position: Int) {
+		Log.d(TAG, "itemClicked: ${item.title} $position")
+		val intent = Intent(this, DetailActivity::class.java)
+		intent.putExtra("ITEM", item)
+		startActivity(intent)
 	}
 
 	override fun onStart() {
@@ -56,10 +123,10 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 		val user = auth.currentUser
 		Log.d(TAG, "onAuthStateChanged: ${user?.uid}")
 		if (user != null) {
-			user_info.setText("Email: ${user.email} / ${user.isEmailVerified}")
-			verify_email.visibility = if (user.isEmailVerified) View.GONE else View.VISIBLE
+			user_info.text = "Email: ${user.email} / ${user.isEmailVerified}"
+//			verify_email.visibility = if (user.isEmailVerified) View.GONE else View.VISIBLE
 		} else {
-			user_info.setText("Not login")
+			user_info.text = "Not login"
 			verify_email.visibility = View.GONE
 		}
 	}
@@ -78,22 +145,34 @@ class MainActivity : AppCompatActivity(), FirebaseAuth.AuthStateListener {
 			R.id.action_settings -> true
 			R.id.action_signin -> {
 //				startActivityForResult(Intent(this, SignInActivity::class.java), RC_SIGNIN)
-				startActivityForResult(AuthUI.getInstance().createSignInIntentBuilder()
-					.setAvailableProviders(Arrays.asList(
-						AuthUI.IdpConfig.EmailBuilder().build(),
-						AuthUI.IdpConfig.GoogleBuilder().build(),
-                        AuthUI.IdpConfig.FacebookBuilder().build(),
-						AuthUI.IdpConfig.PhoneBuilder().setWhitelistedCountries(listOf("tw", "hk", "cn", "au")).setDefaultCountryIso("tw").build()
-					))
-					.setIsSmartLockEnabled(false)
-					.setLogo(R.mipmap.ic_launcher)
-					.setTheme(R.style.SignUp)
-					.setAuthMethodPickerLayout(AuthMethodPickerLayout.Builder(R.layout.firebase_signin)
-						.setEmailButtonId(R.id.sign_in_with_email)
-						.setGoogleButtonId(R.id.sign_in_with_google)
-						.setFacebookButtonId(R.id.sign_in_with_facebook)
-						.setPhoneButtonId(R.id.sign_in_with_phone).build())
-					.build(), RC_SIGNIN)
+				startActivityForResult(
+					AuthUI.getInstance().createSignInIntentBuilder().setAvailableProviders(
+						Arrays.asList(
+							AuthUI.IdpConfig.EmailBuilder().build(),
+							AuthUI.IdpConfig.GoogleBuilder().build(),
+							AuthUI.IdpConfig.FacebookBuilder().build(),
+							AuthUI.IdpConfig.PhoneBuilder().setWhitelistedCountries(
+								listOf(
+									"tw",
+									"hk",
+									"cn",
+									"au"
+								)
+							).setDefaultCountryIso("tw").build()
+						)
+					)
+						.setIsSmartLockEnabled(false)
+						.setLogo(R.mipmap.ic_launcher)
+						.setTheme(R.style.SignUp)
+						.setAuthMethodPickerLayout(
+							AuthMethodPickerLayout.Builder(R.layout.firebase_signin)
+								.setEmailButtonId(R.id.sign_in_with_email)
+								.setGoogleButtonId(R.id.sign_in_with_google)
+								.setFacebookButtonId(R.id.sign_in_with_facebook)
+								.setPhoneButtonId(R.id.sign_in_with_phone).build()
+						)
+						.build(), RC_SIGNIN
+				)
 				true
 			}
 			R.id.action_signout -> {
